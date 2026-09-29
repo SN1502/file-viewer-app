@@ -1,0 +1,51 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build web app
+      run: npm run build
+
+    - name: Build Windows EXE with Electron
+      run: npm run electron-build
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload Installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: file-viewer-app-installer
+        path: dist/File Viewer-*.exe
+
+    - name: Upload Portable EXE
+      uses: actions/upload-artifact@v4
+      with:
+        name: file-viewer-app-portable
+        path: dist/File Viewer-*-portable.exe
+
+    - name: Create Release with Assets
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          dist/File Viewer-*.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
