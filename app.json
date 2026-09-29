@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "File Viewer",
+    "slug": "file-viewer-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/favicon.svg",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/favicon.svg",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTabletMode": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/favicon.svg",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./src/favicon.svg"
+    },
+    "description": "View Excel, CSV, and PDF files on your mobile device",
+    "primaryColor": "#3b82f6"
+  }
+}
