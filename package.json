@@ -6,8 +6,9 @@
   "main": "electron/main.js",
   "homepage": "./",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "assets": "node scripts/copy-pdfjs-assets.mjs",
+    "dev": "npm run assets && vite",
+    "build": "npm run assets && tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
     "electron": "electron .",
@@ -16,6 +17,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.5.2",
     "lucide-react": "^1.48.0",
     "papaparse": "^5.7.0",

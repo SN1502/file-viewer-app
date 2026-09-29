@@ -14,6 +14,26 @@ Every push to `main` builds a signed release APK and publishes it on the
 
 Requires Android 7.0 (API 24) or newer.
 
+## Using it instead of Excel / Adobe Reader
+
+File Viewer registers itself as a handler for PDF, Excel (`xlsx`, `xlsm`, `xlsb`, `xls`,
+`ods`) and CSV/TSV files. Tap one of those files in your file manager, WhatsApp, Gmail,
+Downloads, etc., choose **File Viewer** and pick **Always** to make it the default.
+Files can also be sent to it with **Share**, or opened from inside the app.
+
+- **Spreadsheets:** Excel-style grid with column letters and row numbers, sheet tabs,
+  merged cells, number/date/currency formats, text that spills into empty cells,
+  tap a cell to see (and copy) its full value, pinch or double-tap to zoom. Large
+  sheets are parsed off the main thread and rendered virtually.
+- **PDFs:** continuous scrolling with each page fitted to the screen width, pinch or
+  double-tap to zoom, page indicator with go-to-page, and password-protected PDFs.
+- **Recent files:** the last 20 files are kept on the device so they can be reopened.
+  Nothing is uploaded; everything is processed on the phone.
+
+How it works: `IncomingFilePlugin.java` receives the `VIEW`/`SEND` intent, copies the
+document into the app's cache and emits a `fileOpened` event that `src/lib/native.ts`
+turns into a `File` for the viewer.
+
 ## What the pipeline does
 
 1. `npm ci` and `npm run build` (Node 22) to build the web app into `dist/`

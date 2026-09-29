@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File Viewer icon: a document with a table, on the brand-blue background. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M39,30H61L73,42V76A4,4 0,0 1,69 80H39A4,4 0,0 1,35 76V34A4,4 0,0 1,39 30Z" />
+    <path
+        android:fillColor="#C7D8FB"
+        android:pathData="M61,30V38A4,4 0,0 0,65 42H73Z" />
+    <path
+        android:fillColor="#2563EB"
+        android:pathData="M41,46h26v5h-26z" />
+    <path
+        android:fillColor="#93B4F5"
+        android:pathData="M41,54h10v4h-10zM53,54h14v4h-14zM41,61h10v4h-10zM53,61h14v4h-14zM41,68h10v4h-10zM53,68h14v4h-14z" />
+</vector>

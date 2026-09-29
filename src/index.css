@@ -1,111 +1,118 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
   color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #eef1f6;
+  --text: #1b1f24;
+  --text-2: #5d6673;
+  --border: #dde2ea;
+  --accent: #2563eb;
+  --accent-soft: #e4ecfd;
+  --danger: #d93025;
+  --overlay: rgba(28, 32, 38, 0.82);
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 4px 16px rgba(16, 24, 40, 0.08);
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  --pdf: #e0433a;
+  --pdf-soft: #fde8e6;
+  --xls: #1a7f45;
+  --xls-soft: #e3f4ea;
+  --csv: #0e7c86;
+  --csv-soft: #e0f3f4;
+
+  --cell-bg: #ffffff;
+  --cell-text: #1b1f24;
+  --grid-line: #e1e4e9;
+  --grid-header: #f3f4f7;
+  --grid-header-line: #d5d9e0;
+  --grid-header-text: #5f6772;
+  --grid-header-active: #dde7fc;
+  --pdf-bg: #e6e8ec;
+
+  --mono: ui-monospace, 'Roboto Mono', Menlo, Consolas, monospace;
+
+  /* Capacitor injects --safe-area-inset-*; env() covers browsers. */
+  --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+  --safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Noto Sans Tamil', sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+    --bg: #111418;
+    --surface: #1a1e24;
+    --surface-2: #232830;
+    --text: #e8eaed;
+    --text-2: #9aa3ae;
+    --border: #2d333c;
+    --accent: #6b9bff;
+    --accent-soft: #1d2a45;
+    --overlay: rgba(10, 12, 15, 0.85);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+    --pdf: #ff7a70;
+    --pdf-soft: #3a2220;
+    --xls: #4cc584;
+    --xls-soft: #1a3226;
+    --csv: #4cc3cc;
+    --csv-soft: #173236;
+
+    --cell-bg: #15181d;
+    --cell-text: #e3e6ea;
+    --grid-line: #2a2f37;
+    --grid-header: #1d2127;
+    --grid-header-line: #333944;
+    --grid-header-text: #9aa3ae;
+    --grid-header-active: #1f2c48;
+    --pdf-bg: #0b0d10;
   }
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-body {
+html,
+body,
+#root {
+  height: 100%;
   margin: 0;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+body {
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+button {
+  font: inherit;
+  color: inherit;
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
+
+h1,
+h2,
 p {
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+.spin {
+  animation: spin 0.9s linear infinite;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

@@ -1,121 +1,178 @@
-import { useState } from 'react';
-import { FileText, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import FileViewer from './components/FileViewer';
-import FileUpload from './components/FileUpload';
+import { LoaderCircle } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
+import DocumentScreen from './components/DocumentScreen';
+import HomeScreen from './components/HomeScreen';
+import { ACCEPT, detectKind, type DocKind } from './lib/fileTypes';
+import { exitApp, listenForIncomingFiles, onBackButton } from './lib/native';
+import {
+  clearRecents,
+  getRecentBlob,
+  listRecents,
+  markOpened,
+  removeRecent,
+  saveRecent,
+  type RecentFile,
+} from './lib/recents';
 import './App.css';
 
-interface FileData {
+export interface OpenDocument {
+  key: number;
   name: string;
-  type: 'excel' | 'csv' | 'pdf';
-  data: any;
-  rawFile?: File;
+  kind: DocKind;
+  file: Blob;
+  size: number;
+  /** "external" = handed over by another app; back then returns to that app. */
+  source: 'picker' | 'external' | 'recent';
 }
 
-function App() {
-  const [files, setFiles] = useState<FileData[]>([]);
-  const [activeFileIndex, setActiveFileIndex] = useState<number | null>(null);
+let nextKey = 1;
 
-  const handleFileUpload = (newFiles: FileData[]) => {
-    setFiles([...files, ...newFiles]);
-    if (activeFileIndex === null && newFiles.length > 0) {
-      setActiveFileIndex(0);
-    }
-  };
+export default function App() {
+  const [doc, setDoc] = useState<OpenDocument | null>(null);
+  const [recents, setRecents] = useState<RecentFile[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const toastTimer = useRef(0);
+  const docRef = useRef<OpenDocument | null>(null);
 
-  const handleRemoveFile = (index: number) => {
-    const newFiles = files.filter((_, i) => i !== index);
-    setFiles(newFiles);
+  useEffect(() => {
+    docRef.current = doc;
+  }, [doc]);
 
-    if (activeFileIndex === index) {
-      if (newFiles.length > 0) {
-        setActiveFileIndex(newFiles.length - 1 === index ? index - 1 : index);
-      } else {
-        setActiveFileIndex(null);
+  const refreshRecents = useCallback(async () => {
+    setRecents(await listRecents());
+  }, []);
+
+  useEffect(() => {
+    void refreshRecents();
+  }, [refreshRecents]);
+
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 4500);
+  }, []);
+
+  const openFile = useCallback(
+    async (file: File, source: OpenDocument['source']) => {
+      try {
+        const kind = await detectKind(file, file.name, file.type);
+        if (!kind) {
+          showToast(`“${file.name}” isn’t a PDF, Excel or CSV file.`);
+          return;
+        }
+        setDoc({ key: nextKey++, name: file.name, kind, file, size: file.size, source });
+        await saveRecent(file.name, kind, file);
+        await refreshRecents();
+      } catch (error) {
+        showToast(`Couldn’t open “${file.name}”: ${error instanceof Error ? error.message : String(error)}`);
+      } finally {
+        setBusy(null);
       }
-    } else if (activeFileIndex !== null && activeFileIndex > index) {
-      setActiveFileIndex(activeFileIndex - 1);
-    }
-  };
+    },
+    [refreshRecents, showToast],
+  );
 
-  const activeFile = activeFileIndex !== null ? files[activeFileIndex] : null;
+  const openRecent = useCallback(
+    async (item: RecentFile) => {
+      try {
+        const blob = await getRecentBlob(item.id);
+        if (!blob) {
+          showToast('That file is no longer available.');
+          await removeRecent(item.id);
+          await refreshRecents();
+          return;
+        }
+        setDoc({ key: nextKey++, name: item.name, kind: item.kind, file: blob, size: item.size, source: 'recent' });
+        await markOpened(item.id);
+        await refreshRecents();
+      } catch (error) {
+        showToast(`Couldn’t open “${item.name}”: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    },
+    [refreshRecents, showToast],
+  );
+
+  // Files handed over by other apps ("Open with" / "Share").
+  useEffect(
+    () =>
+      listenForIncomingFiles({
+        onStart: (name) => setBusy(`Opening ${name}…`),
+        onFile: (file) => void openFile(file, 'external'),
+        onError: (message) => {
+          setBusy(null);
+          showToast(message);
+        },
+      }),
+    [openFile, showToast],
+  );
+
+  // Android back: document → home, or back to the app that sent the file.
+  useEffect(
+    () =>
+      onBackButton(() => {
+        const current = docRef.current;
+        if (current && current.source !== 'external') setDoc(null);
+        else exitApp();
+      }),
+    [],
+  );
+
+  // Desktop: drop a file anywhere to open it.
+  useEffect(() => {
+    const onDragOver = (event: DragEvent) => {
+      if (event.dataTransfer?.types.includes('Files')) event.preventDefault();
+    };
+    const onDrop = (event: DragEvent) => {
+      const file = event.dataTransfer?.files?.[0];
+      if (!file) return;
+      event.preventDefault();
+      void openFile(file, 'picker');
+    };
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('drop', onDrop);
+    return () => {
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('drop', onDrop);
+    };
+  }, [openFile]);
+
+  const openPicker = () => inputRef.current?.click();
+
+  const onPicked = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (file) void openFile(file, 'picker');
+  };
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <h1>📄 File Viewer</h1>
-        <p>View Excel, CSV, and PDF files on mobile</p>
-      </header>
+    <>
+      {doc ? (
+        <DocumentScreen key={doc.key} doc={doc} onBack={() => setDoc(null)} onOpenAnother={openPicker} />
+      ) : (
+        <HomeScreen
+          recents={recents}
+          onOpenPicker={openPicker}
+          onOpenRecent={(item) => void openRecent(item)}
+          onRemoveRecent={(item) => void removeRecent(item.id).then(refreshRecents)}
+          onClearRecents={() => void clearRecents().then(refreshRecents)}
+        />
+      )}
 
-      <div className="app-content">
-        {files.length === 0 ? (
-          <FileUpload onFilesUpload={handleFileUpload} />
-        ) : (
-          <div className="viewer-layout">
-            <div className="file-list-sidebar">
-              <div className="sidebar-header">
-                <h2>Files ({files.length})</h2>
-              </div>
-              <div className="file-list">
-                {files.map((file, index) => (
-                  <div
-                    key={index}
-                    className={`file-item ${activeFileIndex === index ? 'active' : ''}`}
-                    onClick={() => setActiveFileIndex(index)}
-                  >
-                    <div className="file-item-content">
-                      <FileText size={16} />
-                      <span className="file-name">{file.name}</span>
-                      <span className="file-type">{file.type.toUpperCase()}</span>
-                    </div>
-                    <button
-                      className="remove-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveFile(index);
-                      }}
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <FileUpload onFilesUpload={handleFileUpload} compact />
-            </div>
+      <input ref={inputRef} type="file" accept={ACCEPT} onChange={onPicked} hidden />
 
-            <div className="viewer-main">
-              {activeFile ? (
-                <>
-                  <div className="viewer-header">
-                    <h2>{activeFile.name}</h2>
-                    <div className="nav-buttons">
-                      <button
-                        disabled={activeFileIndex === 0}
-                        onClick={() => setActiveFileIndex(Math.max(0, (activeFileIndex ?? 0) - 1))}
-                        className="nav-btn"
-                      >
-                        <ChevronLeft size={20} />
-                      </button>
-                      <span className="file-counter">
-                        {(activeFileIndex ?? 0) + 1} / {files.length}
-                      </span>
-                      <button
-                        disabled={activeFileIndex === files.length - 1}
-                        onClick={() => setActiveFileIndex(Math.min(files.length - 1, (activeFileIndex ?? 0) + 1))}
-                        className="nav-btn"
-                      >
-                        <ChevronRight size={20} />
-                      </button>
-                    </div>
-                  </div>
-                  <FileViewer file={activeFile} />
-                </>
-              ) : null}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+      {busy && (
+        <div className="busy-overlay" role="status">
+          <LoaderCircle className="spin" size={28} />
+          <span>{busy}</span>
+        </div>
+      )}
+      {toast && (
+        <div className="toast" role="alert" onClick={() => setToast(null)}>
+          {toast}
+        </div>
+      )}
+    </>
   );
 }
-
-export default App;

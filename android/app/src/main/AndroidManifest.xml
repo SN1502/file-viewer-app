@@ -22,6 +22,45 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- "Open with" from file managers, WhatsApp, Gmail, Downloads, etc.
+                 Lets File Viewer be chosen (or set as default) for these types. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/x-pdf" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.ms-excel.sheet.macroEnabled.12" />
+                <data android:mimeType="application/vnd.ms-excel.sheet.binary.macroEnabled.12" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.template" />
+                <data android:mimeType="application/vnd.oasis.opendocument.spreadsheet" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
+                <data android:mimeType="text/x-csv" />
+                <data android:mimeType="text/x-comma-separated-values" />
+                <data android:mimeType="application/csv" />
+                <data android:mimeType="application/x-csv" />
+                <data android:mimeType="text/tab-separated-values" />
+            </intent-filter>
+
+            <!-- "Share" to File Viewer -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.ms-excel.sheet.macroEnabled.12" />
+                <data android:mimeType="application/vnd.oasis.opendocument.spreadsheet" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
+                <data android:mimeType="application/csv" />
+                <data android:mimeType="text/tab-separated-values" />
+            </intent-filter>
+
         </activity>
 
         <provider
