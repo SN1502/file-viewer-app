@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.fileviewer.app',
-  appName: 'file-viewer-app',
+  appName: 'File Viewer',
   webDir: 'dist'
 };
 

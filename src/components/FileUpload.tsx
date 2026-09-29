@@ -75,7 +75,7 @@ export default function FileUpload({ onFilesUpload, compact = false }: FileUploa
         ref={fileInputRef}
         type="file"
         multiple
-        accept=".xlsx,.xls,.csv,.pdf"
+        accept=".xlsx,.xls,.csv,.pdf,application/pdf,text/csv,text/comma-separated-values,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         onChange={handleFileSelect}
         disabled={loading}
         className="file-input"

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
+// Bundle the worker with the app so PDFs render offline (inside the Android
+// WebView and Electron) instead of fetching it from a CDN at runtime.
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import '../../styles/PDFViewer.css';
 
 interface PDFViewerProps {
@@ -8,7 +11,7 @@ interface PDFViewerProps {
   fileName?: string;
 }
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 export default function PDFViewer({ rawFile, fileName: _fileName }: PDFViewerProps) {
   const [pdf, setPdf] = useState<any>(null);

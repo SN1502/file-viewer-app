@@ -5,39 +5,109 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write   # needed to publish the GitHub Release with the APK
+
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      VERSION_NAME: 1.0.${{ github.run_number }}
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'   # Electron is only needed for the Windows build
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
+      # Capacitor 8 + Vite 8 need Node 22
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm install
+      # Capacitor 8's Android library is compiled for Java 21
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
 
-    - name: Build web app
-      run: npm run build
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-    - name: Build APK
-      run: python3 build-apk.py
+      - name: Install dependencies
+        run: |
+          set -o pipefail
+          npm ci 2>&1 | tee npm-ci.log
 
-    - name: Upload APK artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: file-viewer-apk
-        path: '*.apk'
-        retention-days: 30
+      - name: Build web app
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee web-build.log
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        files: '*.apk'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Copy web app into Android project
+        run: |
+          set -o pipefail
+          npx cap sync android 2>&1 | tee cap-sync.log
+
+      - name: Build signed release APK
+        working-directory: android
+        run: |
+          set -o pipefail
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon 2>&1 | tee ../gradle.log
+
+      - name: Verify APK
+        run: |
+          set -o pipefail
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1 | tee verify.log
+          "$BUILD_TOOLS/aapt2" dump badging "$APK" 2>&1 | head -4 | tee -a verify.log
+          mkdir -p out
+          cp "$APK" "out/FileViewer-v${VERSION_NAME}.apk"
+          ls -lh out/
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FileViewer-v${{ env.VERSION_NAME }}
+          path: out/*.apk
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION_NAME }}
+          name: File Viewer v${{ env.VERSION_NAME }}
+          make_latest: true
+          files: out/*.apk
+          body: |
+            Android APK for File Viewer (Excel, CSV and PDF viewer).
+
+            **Install:** open this page on your phone, tap the `.apk` below, then allow
+            "Install unknown apps" for your browser when Android asks.
+
+            Requires Android 7.0 or newer. Newer builds install over older ones.
+
+      # Log downloads aren't always accessible, so surface the failing
+      # step's output as annotations that can be read from the run page/API.
+      - name: Report failure details
+        if: failure()
+        run: |
+          LOG=$(ls -t *.log 2>/dev/null | head -1)
+          [ -z "$LOG" ] && exit 0
+          encode() { sed -e 's/%/%25/g' -e 's/\r/%0D/g' | awk '{printf "%s%%0A", $0}'; }
+          KEY=$(grep -n -E "What went wrong|error:|ERROR|Error:|^e: |FAILED|Could not" "$LOG" | head -40 | encode)
+          [ -n "$KEY" ] && echo "::error title=Key errors in $LOG::$KEY"
+          echo "::error title=Last lines of $LOG::$(tail -n 60 "$LOG" | encode)"

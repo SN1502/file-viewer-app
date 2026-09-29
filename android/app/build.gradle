@@ -1,5 +1,8 @@
 apply plugin: 'com.android.application'
 
+// CI passes these in; local builds fall back to the defaults.
+def envOr = { String name, String fallback -> System.getenv(name) ?: fallback }
+
 android {
     namespace = "com.fileviewer.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +10,9 @@ android {
         applicationId "com.fileviewer.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // Increases on every CI run so a new APK installs over the old one.
+        versionCode envOr("VERSION_CODE", "1").toInteger()
+        versionName envOr("VERSION_NAME", "1.0.0")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +20,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            // Same key on every build so updates install over the previous
+            // version. The repo keystore is fine for personal sideloading; for
+            // Play Store, point ANDROID_KEYSTORE_PATH & co. at a private key.
+            def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+            storeFile keystorePath ? file(keystorePath) : file("fileviewer.keystore")
+            storePassword envOr("ANDROID_KEYSTORE_PASSWORD", "fileviewer")
+            keyAlias envOr("ANDROID_KEY_ALIAS", "fileviewer")
+            keyPassword envOr("ANDROID_KEY_PASSWORD", "fileviewer")
+        }
+    }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
