@@ -1,0 +1,57 @@
+name: Build APK with Expo
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'package.json'
+  workflow_dispatch:
+
+jobs:
+  build-apk-expo:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build web app
+      run: npm run build
+
+    - name: Install EAS CLI
+      run: npm install -g eas-cli
+
+    - name: Build APK with EAS
+      run: eas build --platform android --non-interactive --wait
+      env:
+        EAS_NO_VCS: 1
+
+    - name: Download APK
+      run: |
+        echo "APK built successfully!"
+        echo "Check Expo dashboard at https://expo.dev/dashboard"
+
+    - name: Upload to artifacts
+      uses: actions/upload-artifact@v4
+      if: success()
+      with:
+        name: file-viewer-apk-expo
+        path: '*.apk'
+        retention-days: 30
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: '*.apk'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
